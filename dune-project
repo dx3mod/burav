@@ -1,11 +1,11 @@
 (lang dune 3.6)
 
-(name burvar)
+(name burav)
 
 (generate_opam_files true)
 
 (source
- (github dx3mod/stk500.ml))
+ (github dx3mod/burav))
 
 (authors "Mikhail Lopatin <dx3mod@bk.ru>")
 
@@ -14,9 +14,8 @@
 (license MIT)
 
 (package
- (name burvar)
- (synopsis "AVR MCU burner")
- (description "A tool for burning firmware to AVR MCU")
- (depends ocaml cmdliner serialport intel_hex stk500)
+ (name burav)
+ (synopsis "A utility for burning firmware onto AVR MCUs")
+ (depends ocaml cmdliner serialport intel_hex)
  (tags
   (avr embedded programmer)))

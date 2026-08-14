@@ -1,6 +1,9 @@
-# burvar
+# burav
 
-The Bur(n)(A)VR is a utility for burning (i.e. upload) firmware to AVR MCU. Essentially, it is a reimplementation of the [AVRDUDE] utility, but written in [OCaml]. Currently supports protocols: STK500v1. 
+The Bur(N)(A)VR is a tool for burning firmware onto AVR microcontrollers. It is a light-weight reimplementation of the [AVRDUDE] utility, written in [OCaml], aiming to be easy to use and understand.
+
+Supported protocols and devices: 
+* Arduino bootloader protocol (STK500v1)
 
 ## Installation 
 
@@ -10,8 +13,7 @@ Now, installation is available only from the source code via the [OPAM] package 
 $ opam pin burvar.dev https://github.com/dx3mod/burvar.git
 ```
 
-Otherwise, you can clone the repository and use the [Dune] build system to build the project without a package manager
-for some reasons, such as native system distribution (`.ext`, `.dmg`, distro's packages).
+Otherwise, you can clone the repository and use the [Dune] build system to build the project without a package manager, for some reasons such as native system distributions (e.g., `.exe`, `.dmg`, and distro packages).
 
 ## Usage
 
@@ -45,6 +47,10 @@ Successful uploading done.
 - [AVRDUDE] is a utility to program AVR microcontrollers;
 - [avrman](https://docs.rs/avrman/latest/avrman/)  is a programmer for AVR microcontrollers written natively in Rust;
 
+## License
+
+The project is licensed under [the MIT License](./LICENSE), which allows for all permissions.
+Just use it and enjoy yourself without fear. We are always open to pull requests!
 
 [AVRDUDE]: https://github.com/avrdudes/avrdude
 [OCaml]: https://ocaml.org

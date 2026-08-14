@@ -36,7 +36,7 @@ let cmd f =
   in
 
   let info =
-    Cmd.info "burvar" ~doc:"A utility for burning firmware to AVR MCU"
+    Cmd.info "burav" ~doc:"A utility for burning firmware onto AVR MCUs"
   in
   Cmd.group info [ upload_cmd handle_upload_cmd ]
 

@@ -1,0 +1,3 @@
+(library
+ (name stk500)
+ (package burav))

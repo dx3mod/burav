@@ -6,7 +6,7 @@ let main ser_port_path programmer baud_rate firm_bin =
     match Filename.extension firm_bin with
     | ".hex" ->
         log_using_firmware_source "INTEL HEX" firm_bin;
-        In_channel.with_open_text firm_bin Burvar.Ihex_loader.binary_of_channel
+        In_channel.with_open_text firm_bin Burav.Ihex_loader.binary_of_channel
     | "" | ".bin" ->
         log_using_firmware_source "RAW BINARY" firm_bin;
         In_channel.with_open_bin firm_bin In_channel.input_all
@@ -26,7 +26,7 @@ let main ser_port_path programmer baud_rate firm_bin =
   match programmer with
   | Some ("stk500" | "stk500v1" | "arduino") ->
       with_open_serial_port_communication @@ fun serial_port ->
-      Burvar.Driver_stk500.upload serial_port firmware_binary_data
+      Burav.Driver_stk500.upload serial_port firmware_binary_data
   | _ -> raise (Invalid_argument "programmer invalid value")
 
 let () =
