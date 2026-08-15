@@ -1,34 +1,39 @@
-let log_using_firmware_source firm_format firm_path =
-  Printf.printf "Using firmware file as %s source: %s\n" firm_format firm_path
+module Log = Dolog.Log
 
-let main ser_port_path programmer baud_rate firm_bin =
-  let firmware_binary_data =
-    match Filename.extension firm_bin with
+let upload ~device_path ~programmer_type ~baud_rate ~firmware_path () =
+  Log.info "Uploading options:";
+  Log.info "  * Firmware file: %s" firmware_path;
+  Option.iter (Log.info "  * Programmer: %s") programmer_type;
+
+  let firmware =
+    match Filename.extension firmware_path with
     | ".hex" ->
-        log_using_firmware_source "INTEL HEX" firm_bin;
-        In_channel.with_open_text firm_bin Burav.Ihex_loader.binary_of_channel
-    | "" | ".bin" ->
-        log_using_firmware_source "RAW BINARY" firm_bin;
-        In_channel.with_open_bin firm_bin In_channel.input_all
-    | extension ->
-        failwith
-        @@ Printf.sprintf "unsupported '%s' format file for burning"
-             (String.uppercase_ascii extension)
+        In_channel.with_open_text firmware_path Intel_hex.Decode.from_channel
+    | ".bin" ->
+        In_channel.with_open_bin firmware_path In_channel.input_all
+        |> Intel_hex.Object.from_string ~block_size:120
+    | _ -> failwith "unsupported firmware type"
   in
 
-  let with_open_serial_port_communication =
-    let opts = Serialport.Port_options.make ~baud_rate () in
-    Serialport_unix.with_open_communication ~opts ser_port_path
-  in
-
-  Printf.printf "Using %s programmer\n" (Option.get programmer);
-
-  match programmer with
-  | Some ("stk500" | "stk500v1" | "arduino") ->
-      with_open_serial_port_communication @@ fun serial_port ->
-      Burav.Driver_stk500.upload serial_port firmware_binary_data
-  | _ -> raise (Invalid_argument "programmer invalid value")
+  match programmer_type with
+  | Some ("arduino" | "stk500") ->
+      let port_path = Option.get device_path in
+      Burav.Driver_arduino.upload_firmware ~baud_rate ~port_path firmware
+  | _ -> failwith "unsupported programmer type"
 
 let () =
   Out_channel.set_buffered stdout false;
-  Cli.run main
+
+  (match Sys.getenv_opt "LOG" with
+  | Some "DEBUG" -> Log.set_log_level DEBUG
+  | _ -> Log.set_log_level INFO);
+
+  Log.set_prefix_builder (fun _ -> "burav: ");
+
+  try Cli.run upload with
+  | Sys_error msg ->
+      Printf.eprintf "\nSystem error: %s!\n" msg;
+      exit 1
+  | Failure msg ->
+      Printf.eprintf "Something went wrong: %s." msg;
+      exit 1

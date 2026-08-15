@@ -1,16 +1,18 @@
 open Cmdliner
 
-let serial_port_path =
-  let doc = "Serial port path" in
+let device_path =
+  let doc = "Device path" in
   Arg.(
-    value & opt (some path) None & info [ "P"; "port" ] ~docv:"PORT_PATH" ~doc)
+    value
+    & opt (some path) None
+    & info [ "d"; "device-path" ] ~docv:"DEVICE_PATH" ~doc)
 
-let programmer =
-  let doc = "Target programmer" in
+let programmer_type =
+  let doc = "Target programmer type" in
   Arg.(
     value
     & opt (some string) None
-    & info [ "p"; "programmer" ] ~docv:"PROG_NAME" ~doc)
+    & info [ "c"; "programmer" ] ~docv:"PROGRAMMER_TYPE" ~doc)
 
 let baud_rate =
   let doc = "Serial baud rate" in
@@ -20,24 +22,24 @@ let firmware_binary_path =
   let doc = "Firmware binary/ihex path" in
   Arg.(required & pos 0 (some path) None & info [] ~docv:"FIRMWARE_PATH" ~doc)
 
-let upload_cmd f =
-  let info = Cmd.info "upload" ~doc:"Upload the firmware to connected board" in
-  Cmd.make info
-    Term.(
-      const f $ serial_port_path $ programmer $ baud_rate $ firmware_binary_path)
+module Commands = struct
+  let upload f =
+    Cmd.make
+      Cmd.(info "upload" ~doc:"Upload the firmware to connected board")
+      Term.(
+        const f $ device_path $ programmer_type $ baud_rate
+        $ firmware_binary_path)
 
-let cmd f =
-  let handle_upload_cmd serial_port_path firmware_binary_path =
-    match serial_port_path with
-    | None ->
-        prerr_endline "Set the serial port path please!";
-        exit 1
-    | Some serial_port_path -> f serial_port_path firmware_binary_path
-  in
+  let handle f =
+    Cmd.(
+      group
+        (info "burav" ~doc:"A utility for burning firmware onto AVR MCUs")
+        [
+          upload (fun device_path programmer_type baud_rate firmware_path ->
+              f ~device_path ~programmer_type ~baud_rate ~firmware_path ());
+        ])
+end
 
-  let info =
-    Cmd.info "burav" ~doc:"A utility for burning firmware onto AVR MCUs"
-  in
-  Cmd.group info [ upload_cmd handle_upload_cmd ]
-
-let run f = if !Sys.interactive then () else exit (Cmdliner.Cmd.eval @@ cmd f)
+let run f =
+  if !Sys.interactive then ()
+  else exit (Cmdliner.Cmd.eval ~catch:false @@ Commands.handle f)

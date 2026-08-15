@@ -1,4 +1,4 @@
-(** The implementation of the first version of the STK500 protocol. *)
+(** The partial implementation of the STK500v1 protocol. *)
 
 module Message = struct
   type t = int
@@ -16,15 +16,13 @@ module Message = struct
   let cmnd_stk_read_sign = 0x75
 end
 
-let bytes_of_array arr =
+let string_bytes_of_array arr =
   let bytes = Bytes.create (Array.length arr) in
   Array.iteri (Bytes.set_uint8 bytes) arr;
-  bytes
+  Bytes.unsafe_to_string bytes
 
 module Command = struct
-  type t = bytes
-
-  let make = bytes_of_array
+  let make = string_bytes_of_array
   let sync = make Message.[| cmnd_stk_get_sync; sync_crc_eop |]
 
   let set_options =
@@ -86,7 +84,7 @@ module Command = struct
     Bytes.set_uint8 command 0 Message.cmnd_stk_load_address;
     Bytes.set_uint16_le command 1 addr;
     Bytes.set_uint8 command 3 Message.sync_crc_eop;
-    command
+    Bytes.unsafe_to_string command
 
   let load_page payload =
     let payload_len = String.length payload in
@@ -99,7 +97,7 @@ module Command = struct
     Bytes.set_uint8 command 3 0x46;
     Bytes.blit_string payload 0 command 4 payload_len;
     Bytes.set_uint8 command (4 + payload_len) Message.sync_crc_eop;
-    command
+    Bytes.unsafe_to_string command
 
   and read_page page_size =
     let command = Bytes.create 5 in
@@ -107,5 +105,5 @@ module Command = struct
     Bytes.set_uint16_be command 1 page_size;
     Bytes.set_uint8 command 3 0x46;
     Bytes.set_uint8 command 4 Message.sync_crc_eop;
-    command
+    Bytes.unsafe_to_string command
 end
