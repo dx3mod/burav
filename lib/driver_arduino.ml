@@ -1,21 +1,24 @@
 module Log = Dolog.Log
 
-module Connection = struct
-  type t = in_channel * out_channel
+module Stk500v1_connection = struct
+  type t = [ `Conn of Serialport.Descriptor.t ]
 
-  let send_command (_, oc) command = Out_channel.output_string oc command
-
-  exception Not_response
   exception Unexpected_response of { actual : string; expected : string }
 
-  let send_command_with_expected_answer ~expected ((ic, _) as conn) command =
-    send_command conn command;
+  let send_command (`Conn pd) command =
+    Serialport_unix.Descriptor.write_string pd command
 
-    match In_channel.really_input_string ic (String.length expected) with
-    | None -> raise Not_response
-    | Some response ->
-        if response <> expected then
-          raise @@ Unexpected_response { actual = response; expected }
+  and verify_response (`Conn pd) expected =
+    let response =
+      Serialport_unix.Descriptor.read_string pd String.(length expected)
+    in
+
+    if response <> expected then
+      raise @@ Unexpected_response { actual = response; expected }
+
+  let send_command_with_expected_answer ~expected conn command =
+    send_command conn command;
+    verify_response conn expected
 
   let expected =
     Stk500.V1.Message.[| resp_stk_in_sync; resp_stk_ok |]
@@ -61,30 +64,30 @@ let upload_firmware ~baud_rate ~port_path firmware =
 
   Log.debug "Open serial port communication";
   let pd = Serialport.open_communication port_path in
-  Serialport.Descriptor.configure' ~baud_rate pd "8N1H";
+  Serialport.Descriptor.configure_with_mode ~baud_rate pd "8N1H";
 
-  let conn = Serialport.Descriptor.to_channels pd in
+  let conn : Stk500v1_connection.t = `Conn pd in
 
   Log.debug "Reset MCU";
   reset_mcu pd;
 
   Log.info "Send SYNC command";
-  Connection.send_sync_command conn;
+  Stk500v1_connection.send_sync_command conn;
 
   Log.info "Send SET_DEVICE command";
-  Connection.send_set_options_command conn;
+  Stk500v1_connection.send_set_options_command conn;
 
   Log.info "Enter into programming mode";
-  Connection.send_enter_programming_mode_command conn;
+  Stk500v1_connection.send_enter_programming_mode_command conn;
 
   Log.info "Start firmware uploading...";
 
   let write address page =
-    Log.info "  Send LOAD_ADDRESS 0x%04X command\n" address;
-    Connection.send_load_address_command conn address;
+    Log.info "  LOAD_ADDRESS 0x%04X command" address;
+    Stk500v1_connection.send_load_address_command conn address;
 
-    Log.info "  Send LOAD_PAGE (0x%X bytes) command\n" (String.length page);
-    Connection.send_load_flash_page_command conn page
+    Log.info "  LOAD_PAGE (0x%X bytes) command" (String.length page);
+    Stk500v1_connection.send_load_flash_page_command conn page
   in
 
   Firmware.write_into_memory ~block_size:120 ~write firmware;
@@ -92,6 +95,6 @@ let upload_firmware ~baud_rate ~port_path firmware =
   Log.info "Finished firmware uploading cycle";
   Log.info "Send LEAVE_PROG_MODE command. Leave from programming mode.";
 
-  Connection.send_exit_programming_mode_command conn;
+  Stk500v1_connection.send_exit_programming_mode_command conn;
 
   Log.info "Successful uploading done."
