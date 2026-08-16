@@ -87,7 +87,7 @@ let upload_firmware ~baud_rate ~port_path firmware =
     Connection.send_load_flash_page_command conn page
   in
 
-  Intel_hex.Object.into_blob ~write firmware;
+  Firmware.write_into_memory ~block_size:120 ~write firmware;
 
   Log.info "Finished firmware uploading cycle";
   Log.info "Send LEAVE_PROG_MODE command. Leave from programming mode.";

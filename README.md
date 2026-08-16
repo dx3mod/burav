@@ -1,4 +1,6 @@
-# burav
+<img src="https://i.ibb.co/TDc6L48J/buravlogo-001-2.png" width="170" />
+
+# burav 
 
 The Bur(N)(A)VR is a tool for burning firmware onto AVR microcontrollers. It is a light-weight reimplementation of the [AVRDUDE] utility, written in [OCaml], aiming to be easy to use and understand.
 

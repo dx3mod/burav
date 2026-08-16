@@ -5,15 +5,7 @@ let upload ~device_path ~programmer_type ~baud_rate ~firmware_path () =
   Log.info "  * Firmware file: %s" firmware_path;
   Option.iter (Log.info "  * Programmer: %s") programmer_type;
 
-  let firmware =
-    match Filename.extension firmware_path with
-    | ".hex" ->
-        In_channel.with_open_text firmware_path Intel_hex.Decode.from_channel
-    | ".bin" ->
-        In_channel.with_open_bin firmware_path In_channel.input_all
-        |> Intel_hex.Object.from_string ~block_size:120
-    | _ -> failwith "unsupported firmware type"
-  in
+  let firmware = Burav.Firmware.Loader.from_file firmware_path in
 
   match programmer_type with
   | Some ("arduino" | "stk500") ->
