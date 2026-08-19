@@ -1,4 +1,4 @@
-module Log = Dolog.Log
+(* module Log = Dolog.Make *)
 
 module Stk500v1_connection = struct
   type t = [ `Conn of Serialport.Descriptor.t ]
@@ -6,7 +6,8 @@ module Stk500v1_connection = struct
   exception Unexpected_response of { actual : string; expected : string }
 
   let send_command (`Conn pd) command =
-    Serialport_unix.Descriptor.write_string pd command
+    Serialport_unix.Descriptor.write_string pd command;
+    Unix.sleepf 0.01
 
   and verify_response (`Conn pd) expected =
     let response =
@@ -46,6 +47,10 @@ module Stk500v1_connection = struct
   let send_exit_programming_mode_command conn =
     send_command_with_expected_answer ~expected conn
       Stk500.V1.Command.exit_programming_mode
+
+  let send_chip_erase conn =
+    send_command_with_expected_answer ~expected conn
+      Stk500.V1.Command.chip_erase
 end
 
 let reset_mcu pd =
@@ -71,29 +76,33 @@ let upload_firmware ~baud_rate ~port_path firmware =
   Log.debug "Reset MCU";
   reset_mcu pd;
 
-  Log.info "Send SYNC command";
+  Serialport.Descriptor.drain pd;
+
+  Log.debug "Send SYNC command";
   Stk500v1_connection.send_sync_command conn;
 
-  Log.info "Send SET_DEVICE command";
+  Log.debug "Send SET_DEVICE command";
   Stk500v1_connection.send_set_options_command conn;
 
-  Log.info "Enter into programming mode";
+  Log.debug "Enter into programming mode";
   Stk500v1_connection.send_enter_programming_mode_command conn;
 
   Log.info "Start firmware uploading...";
+  Log.debug "Chip erase";
+  Stk500v1_connection.send_chip_erase conn;
 
   let write address page =
-    Log.info "  LOAD_ADDRESS 0x%04X command" address;
+    Log.debug "  LOAD_ADDRESS 0x%04X command" address;
     Stk500v1_connection.send_load_address_command conn address;
 
-    Log.info "  LOAD_PAGE (0x%X bytes) command" (String.length page);
+    Log.debug "  LOAD_PAGE (0x%X bytes) command" (String.length page);
     Stk500v1_connection.send_load_flash_page_command conn page
   in
 
-  Firmware.write_into_memory ~block_size:120 ~write firmware;
+  Firmware.write_into_memory ~page_size:128 ~write firmware;
 
   Log.info "Finished firmware uploading cycle";
-  Log.info "Send LEAVE_PROG_MODE command. Leave from programming mode.";
+  Log.debug "Send LEAVE_PROG_MODE command. Leave from programming mode.";
 
   Stk500v1_connection.send_exit_programming_mode_command conn;
 

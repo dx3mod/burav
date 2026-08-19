@@ -10,6 +10,7 @@ module Message = struct
   let cmnd_stk_set_device = 0x42
   let cmnd_stk_enter_prog_mode = 0x50
   let cmnd_stk_leave_prog_mode = 0x51
+  let cmnd_stk_chip_erase = 0x52
   let cmnd_stk_load_address = 0x55
   let cmnd_stk_prog_page = 0x64
   let cmnd_stk_read_page = 0x74
@@ -82,7 +83,7 @@ module Command = struct
   let load_address addr =
     let command = Bytes.create 4 in
     Bytes.set_uint8 command 0 Message.cmnd_stk_load_address;
-    Bytes.set_uint16_le command 1 addr;
+    Bytes.set_uint16_be command 1 addr;
     Bytes.set_uint8 command 3 Message.sync_crc_eop;
     Bytes.unsafe_to_string command
 
@@ -106,4 +107,6 @@ module Command = struct
     Bytes.set_uint8 command 3 0x46;
     Bytes.set_uint8 command 4 Message.sync_crc_eop;
     Bytes.unsafe_to_string command
+
+  and chip_erase = make Message.[| cmnd_stk_chip_erase; sync_crc_eop |]
 end

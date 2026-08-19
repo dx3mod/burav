@@ -1,32 +1,38 @@
 type t = [ `Ihex of Intel_hex.Object.t | `Binary of string ]
 
-let write_into_memory ~block_size ~write = function
+let write_into_memory ~page_size ~write = function
   | `Binary binary ->
-      Intel_hex.Object.from_string ~block_size binary
+      Intel_hex.Object.from_string ~block_size:page_size binary
       |> Intel_hex.Object.into_blob ~write
-  | `Ihex ihex_object ->
-      let page_data = Buffer.create block_size and page_addr = ref 0 in
+  | `Ihex ihex_object -> begin
+      let page_buffer = Buffer.create page_size in
+      let page_addr = ref 0 in
 
-      let rec write' addr payload =
-        let payload_length = String.length payload
-        and page_length = Buffer.length page_data in
+      let write_page_buffer_if_needed () =
+        if Buffer.length page_buffer = page_size then begin
+          write !page_addr Buffer.(contents page_buffer);
+          Buffer.clear page_buffer;
+          page_addr := !page_addr + page_size
+        end
+      in
 
-        if page_length = block_size then begin
-          write !page_addr Buffer.(contents page_data);
-          Buffer.clear page_data;
-          page_addr := addr
-        end;
+      let rec write' _current_addr payload =
+        write_page_buffer_if_needed ();
 
-        let crop_len = block_size - page_length in
+        let remaining_page_bytes = page_size - Buffer.length page_buffer in
 
-        if payload_length <= crop_len then Buffer.add_string page_data payload
-        else if payload_length > crop_len then (
-          Buffer.add_substring page_data payload 0 crop_len;
-          write' addr String.(drop_first crop_len payload))
+        if remaining_page_bytes >= String.length payload then
+          Buffer.add_string page_buffer payload
+        else if remaining_page_bytes < String.length payload then (
+          Buffer.add_substring page_buffer payload 0 remaining_page_bytes;
+          write' _current_addr @@ String.drop_first remaining_page_bytes payload)
+        else failwith "impossible write state"
       in
 
       Intel_hex.Object.into_blob ~write:write' ihex_object;
-      write !page_addr Buffer.(contents page_data)
+      if Buffer.length page_buffer <> 0 then
+        write !page_addr Buffer.(contents page_buffer)
+    end
 
 module Loader = struct
   let from_file filename =
