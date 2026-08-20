@@ -73,36 +73,36 @@ let upload_firmware ~baud_rate ~port_path firmware =
 
   let conn : Stk500v1_connection.t = `Conn pd in
 
-  Log.debug "Reset MCU";
+  Log.debug "reset microcontolller";
   reset_mcu pd;
 
   Serialport.Descriptor.drain pd;
 
-  Log.debug "Send SYNC command";
+  Log.debug "send SYNC command";
   Stk500v1_connection.send_sync_command conn;
 
-  Log.debug "Send SET_DEVICE command";
+  Log.debug "send SET_DEVICE command";
   Stk500v1_connection.send_set_options_command conn;
 
-  Log.debug "Enter into programming mode";
+  Log.debug "enter into programming mode";
   Stk500v1_connection.send_enter_programming_mode_command conn;
 
   Log.info "Start firmware uploading...";
-  Log.debug "Chip erase";
+  Log.debug "send CHIP_ERASE command";
   Stk500v1_connection.send_chip_erase conn;
 
   let write address page =
-    Log.debug "  LOAD_ADDRESS 0x%04X command" address;
+    Log.debug "send [LOAD_ADDRESS 0x%04X] command" address;
     Stk500v1_connection.send_load_address_command conn address;
 
-    Log.debug "  LOAD_PAGE (0x%X bytes) command" (String.length page);
+    Log.debug "send [LOAD_PAGE (0x%X bytes)] command" (String.length page);
     Stk500v1_connection.send_load_flash_page_command conn page
   in
 
   Firmware.write_into_memory ~page_size:128 ~write firmware;
 
   Log.info "Finished firmware uploading cycle";
-  Log.debug "Send LEAVE_PROG_MODE command. Leave from programming mode.";
+  Log.debug "send LEAVE_PROG_MODE command. Leave from programming mode.";
 
   Stk500v1_connection.send_exit_programming_mode_command conn;
 
