@@ -1,0 +1,4 @@
+(library
+ (name vm5277)
+ (libraries serialport.unix)
+ (package burav))

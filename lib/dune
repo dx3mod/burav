@@ -1,5 +1,5 @@
 (library
  (name burav)
- (libraries unix intel_hex stk500v1 serialport serialport.unix))
+ (libraries unix intel_hex stk500v1 vm5277 serialport serialport.unix))
 
 (include_subdirs qualified)
