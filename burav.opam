@@ -8,7 +8,7 @@ tags: ["avr" "embedded" "programmer"]
 homepage: "https://github.com/dx3mod/burav"
 bug-reports: "https://github.com/dx3mod/burav/issues"
 depends: [
-  "dune" {>= "3.6"}
+  "dune" {>= "3.7"}
   "ocaml"
   "cmdliner"
   "serialport"
