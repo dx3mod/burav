@@ -1,4 +1,4 @@
 (executable
  (public_name burav)
  (name main)
- (libraries burav cmdliner dolog))
+ (libraries burav cmdliner))

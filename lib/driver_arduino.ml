@@ -65,45 +65,55 @@ let reset_mcu pd =
   Unix.sleepf 0.25
 
 let upload_firmware ~baud_rate ~port_path firmware =
-  Log.info "Selected Arduino bootloader (i.e. STK500v1) protocol";
+  Printf.printf
+    "burav.arduino: selected Arduino bootloader (STK500v1) protocol.\n";
+  Printf.printf "burav.arduino: opening serial port.\n";
 
-  Log.debug "Open serial port communication";
   let pd = Serialport.open_communication port_path in
   Serialport.Descriptor.configure_with_mode ~baud_rate pd "8N1H";
 
+  Printf.printf "burav.arduino: configured serial port.\n";
+
   let conn : Stk500v1_connection.t = `Conn pd in
 
-  Log.debug "reset microcontolller";
-  reset_mcu pd;
+  Printf.printf "burav.arduino: resetting MCU.\n";
 
+  reset_mcu pd;
   Serialport.Descriptor.drain pd;
 
-  Log.debug "send SYNC command";
+  Printf.printf "burav.arduino:> sending SYNC command.\n";
   Stk500v1_connection.send_sync_command conn;
 
-  Log.debug "send SET_DEVICE command";
+  Printf.printf "burav.arduino:> sending SET_DEVICE command.\n";
   Stk500v1_connection.send_set_options_command conn;
 
-  Log.debug "enter into programming mode";
+  Printf.printf "burav.arduino:> sending ENTER_PROG_MODE command.\n";
   Stk500v1_connection.send_enter_programming_mode_command conn;
 
-  Log.info "Start firmware uploading...";
-  Log.debug "send CHIP_ERASE command";
+  Printf.printf "burav.arduino: entered programming mode.\n";
+
+  Printf.printf "burav.arduino: uploading firmware...\n";
+
+  Printf.printf "burav.arduino: sending CHIP_ERASE command.\n";
   Stk500v1_connection.send_chip_erase conn;
 
   let write address page =
-    Log.debug "send [LOAD_ADDRESS 0x%04X] command" address;
+    Printf.printf "burav.arduino:> sending LOAD_ADDRESS (0x%04X) command.\n"
+      address;
     Stk500v1_connection.send_load_address_command conn address;
 
-    Log.debug "send [LOAD_PAGE (0x%X bytes)] command" (String.length page);
+    Printf.printf "burav.arduino:> sending LOAD_PAGE (%d bytes) command.\n"
+      (String.length page);
     Stk500v1_connection.send_load_flash_page_command conn page
   in
 
   Firmware.write_into_memory ~page_size:128 ~write firmware;
 
-  Log.info "Finished firmware uploading cycle";
-  Log.debug "send LEAVE_PROG_MODE command. Leave from programming mode.";
+  Printf.printf "burav.arduino: finished uploading firmware.\n";
 
+  Printf.printf "burav.arduino: sending LEAVE_PROG_MODE command.\n";
   Stk500v1_connection.send_exit_programming_mode_command conn;
 
-  Log.info "Successful uploading done."
+  Printf.printf "burav.arduino: left programming mode.\n";
+
+  Printf.printf "burav.arduino: firmware uploaded successfully.\n"
