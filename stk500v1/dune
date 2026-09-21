@@ -1,0 +1,4 @@
+(library
+ (name stk500v1)
+ (libraries serialport.unix)
+ (package burav))

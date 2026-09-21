@@ -4,13 +4,14 @@ let upload ~device_path ~programmer_type ~baud_rate ~firmware_path () =
   let firmware = Burav.Firmware.Loader.from_file firmware_path in
   let file_size = In_channel.with_open_bin firmware_path In_channel.length in
 
-  Printf.printf "burav: reading %Ld bytes for flash from input file %S\n"
+  Printf.printf "burav: reading %Ld firmware's bytes from input file %S.\n"
     file_size firmware_path;
 
   match programmer_type with
   | Some ("arduino" | "stk500") ->
       let port_path = Option.get device_path in
-      Burav.Driver_arduino.upload_firmware ~baud_rate ~port_path firmware
+      Burav.Programming_device.Arduino_bootloader.burn_firmware ~baud_rate
+        ~port_path firmware
   | _ -> failwith "unsupported programmer type"
 
 let () =
